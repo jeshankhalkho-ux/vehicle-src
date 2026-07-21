@@ -19,13 +19,81 @@ def ts_to_date(ts):
         return str(ts)
 
 
-def fetch_from_acko(vnum):
-    sess = requests.Session()
-    sess.headers.update({"User-Agent": USER_AGENT})
+def try_acko(vnum, product, sess=None):
+    if not sess:
+        sess = requests.Session()
+        sess.headers.update({"User-Agent": USER_AGENT})
+    payload = {
+        "registration_number": vnum,
+        "mobile_no": MOBILE,
+        "origin": f"acko_{product}",
+        "product": product,
+        "is_new": False,
+    }
+    r = sess.post(
+        ACKO_URL,
+        json=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Origin": "https://www.acko.com",
+            "Referer": f"https://www.acko.com/gi/lp/{product}-insurance/new/",
+        },
+        timeout=15,
+    )
     try:
-        sess.get("https://www.acko.com", timeout=10)
+        data = r.json()
+        v = data.get("vehicle", {})
+        if v.get("make_name"):
+            prev = v.get("previous_policy", {})
+            return {
+                "status": "success",
+                "registration_number": v.get("registration_number"),
+                "owner_name": data.get("user", {}).get("name"),
+                "manufacturer": v.get("make_name"),
+                "model": v.get("model_name"),
+                "variant": v.get("variant_name"),
+                "fuel_type": v.get("fuel_type"),
+                "cubic_cc": v.get("cc"),
+                "seat_capacity": v.get("seating_capacity"),
+                "engine_number": v.get("engine_number_unmasked"),
+                "chassis_number": v.get("chassis_number_unmasked"),
+                "registration_date": ts_to_date(v.get("registration_date")),
+                "manufacturing_year": v.get("registration_year"),
+                "insurance_company": prev.get("insurer_name"),
+                "insurance_valid_upto": ts_to_date(prev.get("expiry_date")),
+            }
     except:
         pass
+    return None
+
+
+def fetch_from_acko(vnum):
+    # Try without homepage (some servers dont need cookies)
+    for product in ["bike", "car"]:
+        result = try_acko(vnum, product)
+        if result:
+            return result
+
+    # Try with homepage cookies
+    try:
+        sess = requests.Session()
+        sess.headers.update({"User-Agent": USER_AGENT})
+        try:
+            sess.get("https://www.acko.com", timeout=10)
+        except:
+            pass
+        for product in ["bike", "car"]:
+            result = try_acko(vnum, product, sess)
+            if result:
+                return result
+    except:
+        pass
+
+    # Try with mobile app headers (no Origin/Referer)
+    headers = {
+        "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 14; 22101320I Build/UKQ1.240624.001)",
+        "Content-Type": "application/json; charset=utf-8",
+    }
     for product in ["bike", "car"]:
         payload = {
             "registration_number": vnum,
@@ -35,16 +103,7 @@ def fetch_from_acko(vnum):
             "is_new": False,
         }
         try:
-            r = sess.post(
-                ACKO_URL,
-                json=payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "Origin": "https://www.acko.com",
-                    "Referer": f"https://www.acko.com/gi/lp/{product}-insurance/new/",
-                },
-                timeout=15,
-            )
+            r = requests.post(ACKO_URL, json=payload, headers=headers, timeout=15)
             data = r.json()
             v = data.get("vehicle", {})
             if v.get("make_name"):
@@ -66,8 +125,9 @@ def fetch_from_acko(vnum):
                     "insurance_company": prev.get("insurer_name"),
                     "insurance_valid_upto": ts_to_date(prev.get("expiry_date")),
                 }
-        except Exception as e:
-            return {"status": "failed", "message": f"ACKO: {str(e)[:100]}"}
+        except:
+            pass
+
     return None
 
 
