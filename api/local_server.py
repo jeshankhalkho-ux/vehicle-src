@@ -55,7 +55,6 @@ def scrape_vahanx(vnum):
             ('tax_upto', r'<span[^>]*>Tax Upto</span>\s*<p[^>]*>([^<]+)'),
             ('puc_no', r'<span[^>]*>PUC No</span>\s*<p[^>]*>([^<]+)'),
             ('insurance_expiry_vahanx', r'<span[^>]*>Insurance Expiry</span>\s*<p[^>]*>([^<]+)'),
-            ('insurance_company_vahanx', r'<span[^>]*>Insurance Company</span>\s*<p[^>]*>([^<]+)'),
             ('insurance_no', r'<span[^>]*>Insurance No</span>\s*<p[^>]*>([^<]+)'),
             ('puc_upto', r'<span[^>]*>PUC Upto</span>\s*<p[^>]*>([^<]+)'),
             ('puc_expiry_in', r'<span[^>]*>PUC Expiry In</span>\s*<p[^>]*>([^<]+)'),
