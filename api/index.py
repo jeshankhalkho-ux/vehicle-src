@@ -271,10 +271,9 @@ def vehicle():
     if vahandetails: result["data_source"].append("vahandetails")
 
     for f in ["puc_no", "tax_upto_vd", "seat_cap_vd", "registration_date_acko",
-              "registration_date_vd", "owner_name_vd", "owner_name",
+              "registration_date_vd", "owner_name_vd",
               "maker_model_vd", "insurance_no", "fuel_type_vd",
-              "engine_number_vd", "engine_number", "chassis_number_vd",
-              "chassis_number"]:
+              "engine_number_vd", "chassis_number_vd"]:
         result.pop(f, None)
 
     return jsonify(result)
