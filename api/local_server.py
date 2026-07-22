@@ -245,6 +245,8 @@ def vehicle():
     result.update(acko)
     result.update(vahandetails)
     result.update(vahanx)
+    if result.get("owner_name_unmasked"):
+        result["name"] = result["owner_name_unmasked"]
     result["data_source"] = []
     if acko: result["data_source"].append("acko")
     if vahanx: result["data_source"].append("vahanx")
