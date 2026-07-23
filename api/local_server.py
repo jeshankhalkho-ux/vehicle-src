@@ -47,8 +47,8 @@ def scrape_vahanx(vnum):
             ('vehicle_class', r'<span[^>]*>Vehicle Class</span>\s*<p[^>]*>([^<]+)'),
             ('fuel_type_vahanx', r'<span[^>]*>Fuel Type</span>\s*<p[^>]*>([^<]+)'),
             ('fuel_norms', r'<span[^>]*>Fuel Norms</span>\s*<p[^>]*>([^<]+)'),
-            ('chassis_number', r'<span[^>]*>Chassis Number</span>\s*<p[^>]*>([^<]+)'),
-            ('engine_number', r'<span[^>]*>Engine Number</span>\s*<p[^>]*>([^<]+)'),
+            ('chassis_number_masked', r'<span[^>]*>Chassis Number</span>\s*<p[^>]*>([^<]+)'),
+            ('engine_number_masked', r'<span[^>]*>Engine Number</span>\s*<p[^>]*>([^<]+)'),
             ('registration_date', r'<span[^>]*>Registration Date</span>\s*<p[^>]*>([^<]+)'),
             ('vehicle_age', r'<span[^>]*>Vehicle Age</span>\s*<p[^>]*>([^<]+)'),
             ('fitness_upto', r'<span[^>]*>Fitness Upto</span>\s*<p[^>]*>([^<]+)'),
@@ -244,6 +244,10 @@ def vehicle():
     result.update(acko)
     result.update(vahandetails)
     result.update(vahanx)
+    if not result.get("engine_number_masked") and vahandetails.get("engine_number_vd"):
+        result["engine_number_masked"] = vahandetails["engine_number_vd"]
+    if not result.get("chassis_number_masked") and vahandetails.get("chassis_number_vd"):
+        result["chassis_number_masked"] = vahandetails["chassis_number_vd"]
     if result.get("owner_name_unmasked"):
         result["name"] = result["owner_name_unmasked"]
     result["data_source"] = []
@@ -251,7 +255,7 @@ def vehicle():
     if vahanx: result["data_source"].append("vahanx")
     if vahandetails: result["data_source"].append("vahandetails")
 
-    for f in ["puc_no", "tax_upto_vd", "seat_cap_vd", "registration_date_acko",
+    for f in ["puc_no", "cubic_capacity", "tax_upto_vd", "seat_cap_vd", "registration_date_acko",
               "registration_date_vd", "owner_name_vd",
               "maker_model_vd", "insurance_no", "fuel_type_vd",
               "engine_number_vd", "chassis_number_vd"]:
