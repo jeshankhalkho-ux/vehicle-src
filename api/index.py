@@ -114,6 +114,8 @@ def query_vahandetails(vnum):
                 "insurance_company_vd": ins_co,
                 "insurance_policy_no": ins_no,
                 "insurance_valid_upto_vd": ins_up,
+                "engine_number_vd": rc.get("rc_eng_no"),
+                "chassis_number_vd": rc.get("rc_chasi_no"),
                 "puc_no_vd": pu_no,
                 "puc_valid_upto_vd": pu_up,
                 "is_rc_expired": raw.get("is_rc_expired"),
