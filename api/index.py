@@ -169,6 +169,32 @@ def try_acko(vnum, product, sess=None):
     return None
 
 
+def query_acko_vehicleinfo(vnum):
+    try:
+        r = requests.get(f'https://www.acko.com/api/app/vehicleInfo/?regNo={vnum}', headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+            "Origin": "https://www.acko.com",
+            "Referer": "https://www.acko.com/",
+        }, timeout=20)
+        if r.status_code == 200:
+            d = r.json()
+            if d.get("registration_number"):
+                return {
+                    "owner_name": d.get("owner_name"),
+                    "vehicle_make": d.get("db_make_name"),
+                    "vehicle_model": d.get("db_model_name"),
+                    "vehicle_variant": d.get("model_name"),
+                    "vehicle_type": d.get("vehicle_type_v2"),
+                    "fuel_type": d.get("fuel_type"),
+                    "policy_expiry_detail": d.get("previous_policy_expiry_detail"),
+                    "variant_id": d.get("variant_id"),
+                }
+    except:
+        pass
+    return {}
+
+
 def fetch_from_acko(vnum):
     for product in ["bike", "car"]:
         result = try_acko(vnum, product)
@@ -220,7 +246,7 @@ def fetch_from_acko(vnum):
 
 @app.route("/")
 def home():
-    return jsonify({"status": "running", "message": "Vehicle RC API (ACKO + VahanX + vahandetails + Fuel)"})
+    return jsonify({"status": "running", "message": "Vehicle RC API (ACKO + Acko VehicleInfo + VahanX + vahandetails + Fuel)"})
 
 
 @app.route("/api/fuel", methods=["GET"])
@@ -257,22 +283,27 @@ def vehicle():
     acko = fetch_from_acko(vnum) or {}
     vahanx = scrape_vahanx(vnum)
     vahandetails = query_vahandetails(vnum)
+    acko_vi = query_acko_vehicleinfo(vnum)
 
-    if not acko and not vahanx and not vahandetails:
+    if not acko and not vahanx and not vahandetails and not acko_vi:
         return jsonify({"status": "failed", "message": "Vehicle not found"}), 404
 
     result = {"status": "success", "registration_number": vnum}
     result.update(acko)
     result.update(vahandetails)
     result.update(vahanx)
+    result.update(acko_vi)
     if not result.get("engine_number_masked") and vahandetails.get("engine_number_vd"):
         result["engine_number_masked"] = vahandetails["engine_number_vd"]
     if not result.get("chassis_number_masked") and vahandetails.get("chassis_number_vd"):
         result["chassis_number_masked"] = vahandetails["chassis_number_vd"]
     if result.get("owner_name_unmasked"):
         result["name"] = result["owner_name_unmasked"]
+    elif result.get("owner_name"):
+        result["name"] = result["owner_name"]
     result["data_source"] = []
     if acko: result["data_source"].append("acko")
+    if acko_vi: result["data_source"].append("acko_vehicleinfo")
     if vahanx: result["data_source"].append("vahanx")
     if vahandetails: result["data_source"].append("vahandetails")
 
