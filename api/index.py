@@ -166,8 +166,6 @@ def scrape_vahanx(vnum):
             ("vehicle_class", r"<span[^>]*>Vehicle Class</span>\s*<p[^>]*>([^<]+)"),
             ("fuel_type_vahanx", r"<span[^>]*>Fuel Type</span>\s*<p[^>]*>([^<]+)"),
             ("fuel_norms", r"<span[^>]*>Fuel Norms</span>\s*<p[^>]*>([^<]+)"),
-            ("chassis_number_masked", r"<span[^>]*>Chassis Number</span>\s*<p[^>]*>([^<]+)"),
-            ("engine_number_masked", r"<span[^>]*>Engine Number</span>\s*<p[^>]*>([^<]+)"),
             ("registration_date", r"<span[^>]*>Registration Date</span>\s*<p[^>]*>([^<]+)"),
             ("vehicle_age", r"<span[^>]*>Vehicle Age</span>\s*<p[^>]*>([^<]+)"),
             ("fitness_upto", r"<span[^>]*>Fitness Upto</span>\s*<p[^>]*>([^<]+)"),
@@ -350,20 +348,23 @@ def query_fuel(city):
 
 
 # --- Merge helper ---
+MASKED_FIELDS = {
+    "chassis_number_masked", "engine_number_masked",
+    "chassis_number_unmasked", "engine_number_unmasked",
+    "owner_name_unmasked",
+}
+
 def merge_results(*results):
-    """Merge multiple result dicts, preferring non-empty values."""
+    """Merge multiple result dicts, preferring non-empty values. Exclude masked fields and sources."""
     merged = {}
-    sources = []
     for r in results:
         if r and isinstance(r, dict):
-            src = r.pop("source", None)
-            if src:
-                sources.append(src)
+            # Remove source and masked fields
+            for k in ("source", *MASKED_FIELDS):
+                r.pop(k, None)
             for k, v in r.items():
                 if v not in (None, "", [], {}) and k not in merged:
                     merged[k] = v
-    if sources:
-        merged["data_sources"] = sources
     return merged
 
 
@@ -443,6 +444,7 @@ def smc_only():
     data = query_smc(vnum)
     if not data:
         return jsonify({"status": "failed", "message": "Not found via SMC"}), 404
+    data.pop("source", None)
     data["registration_number"] = vnum
     data["status"] = "success"
     return jsonify(data)
